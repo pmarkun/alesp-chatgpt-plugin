@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
-  title: Legislative Project Plugin
-  description: A plugin that allows the user to retrieve legislative projects by specifying the project type, number, and year.
+  title: Assembléia Legislativa de São Paulo Plugin
+  description: Um plugin que permite aos usuários obter informações sobre projetos legislativos e deputados estaduais na Assembleia Legislativa. Os usuários podem pesquisar projetos legislativos, obter o conteúdo e metadados de um projeto e obter informações sobre deputados estaduaise deputadas estaduais por São Paulo e seus projetos associados.
   version: 'v1'
 servers:
   - url: http://localhost:5000
@@ -16,7 +16,7 @@ paths:
         schema:
           type: string
         required: true
-        description: The type of the legislative project (e.g., "PL").
+        description: The type of the legislative project (e.g., "PL", "REQ", "PR", "PEC").
       - in: query
         name: number
         schema:
@@ -40,7 +40,74 @@ paths:
           description: Bad Request
         "404":
           description: Not Found
-
+  /search:
+    get:
+      operationId: searchProjects
+      summary: Search for legislative projects based on criteria
+      parameters:
+      - in: query
+        name: author
+        schema:
+          type: string
+        description: The name of the author (deputado ou deputada) of the legislative projects.
+      - in: query
+        name: start_date
+        schema:
+          type: string
+        description: The start date for the search (format DD/MM/YYYY).
+      - in: query
+        name: end_date
+        schema:
+          type: string
+        description: The end date for the search (format DD/MM/YYYY).
+      - in: query
+        name: type
+        schema:
+          type: string
+        description: The type of the legislative projects (e.g., "PL", "REQ", "PR", "PEC").
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchResult'
+        "400":
+          description: Bad Request
+  /get_deputado:
+    get:
+      operationId: getDeputado
+      summary: Get the metadata and projects of a deputado or deputada by name
+      parameters:
+      - in: query
+        name: name
+        schema:
+          type: string
+        required: true
+        description: The name of the deputado.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata:
+                    $ref: '#/components/schemas/DeputadoMetadata'
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResult'
+                required:
+                  - metadata
+                  - projects
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
 components:
   schemas:
     getProjectResponse:
@@ -72,3 +139,74 @@ components:
       required:
         - content
         - metadata
+    SearchResult:
+      type: object
+      properties:
+        author_name:
+          type: string
+          description: The name of the author (deputado or deputada) of the legislative project.
+        author_url:
+          type: string
+          description: The URL of the author's profile page.
+        project:
+          type: string
+          description: The title and date of the legislative project.
+        subject:
+          type: string
+          description: The subject or description of the legislative project.
+        url:
+          type: string
+          description: The URL of the legislative project.
+      required:
+        - author_name
+        - author_url
+        - project
+        - subject
+        - url
+    DeputadoMetadata:
+      type: object
+      properties:
+        Andar:
+          type: string
+          description: The floor where the deputado's office is located.
+        Aniversario:
+          type: string
+          description: The birthday of the deputado (format DD/MM).
+        Biografia:
+          type: string
+          description: The biography of the deputado (HTML format).
+        Email:
+          type: string
+          description: The email address of the deputado.
+        IdDeputado:
+          type: string
+          description: The internal ID of the deputado.
+        IdSPL:
+          type: string
+          description: The SPL (Sistema de Proposições Legislativas) ID of the deputado.
+        IdUA:
+          type: string
+          description: The organizational unit ID of the deputado.
+        Matricula:
+          type: string
+          description: The registration number of the deputado.
+        NomeParlamentar:
+          type: string
+          description: The parliamentary name of the deputado.
+        Partido:
+          type: string
+          description: The political party of the deputado.
+        PathFoto:
+          type: string
+          description: The URL of the deputado's photo.
+        Sala:
+          type: string
+          description: The office room number of the deputado.
+        Situacao:
+          type: string
+          description: The status of the deputado (e.g., "EXE" for exercising the mandate).
+        Telefone:
+          type: string
+          description: The phone number of the deputado.
+      required:
+        - NomeParlamentar

@@ -2,8 +2,8 @@
     "schema_version": "v1",
     "name_for_human": "Legislative Project Plugin",
     "name_for_model": "legislative_project",
-    "description_for_human": "Plugin for retrieving legislative projects by specifying the project type, number, and year.",
-    "description_for_model": "Plugin for retrieving legislative projects by specifying the project type, number, and year.",
+    "description_for_human": "Plugin oferece info sobre projetos e deputados(as) estaduais de SP na Assembleia Legislativa.",
+    "description_for_model": "Plugin oferece info sobre projetos e deputados(as) estaduais de SP na Assembleia Legislativa.",
     "auth": {
       "type": "none"
     },

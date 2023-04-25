@@ -1,14 +1,26 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from alesp import get_project_content
+from alesp import get_project_content, construct_search_url, extract_search_results, fetch_and_clean_deputados_data, get_deputado_by_name
 import json
 import os
 
 app = Flask(__name__)
 CORS(app)
 static_dir = 'static'
-cache_dir = 'cache'
 
+#Set ups cache
+cache_dir = 'cache'
+os.makedirs(cache_dir, exist_ok=True)
+deputados_filepath = os.path.join(cache_dir, "deputados.json")
+if os.path.exists(deputados_filepath):
+    with open(deputados_filepath, "r") as deputados_file:
+        deputados = json.load(deputados_file)
+else:
+    deputados = fetch_and_clean_deputados_data()
+    with open(deputados_filepath, "w") as deputados_file:
+        json.dump(deputados, deputados_file)
+
+#Serves static
 @app.route('/logo.png')
 def serve_logo():
     return send_from_directory(static_dir, 'logo.png')
@@ -21,6 +33,7 @@ def serve_yaml():
 def serve_json():
     return send_from_directory(static_dir, '.well-known/ai-plugin.json')
 
+#API Endpoints
 @app.route('/get_project', methods=['GET'])
 def get_project():
     # Retrieve query parameters
@@ -50,11 +63,65 @@ def get_project():
             return jsonify({'error': 'Project not found'}), 404
 
         # Save the content to the cache file
-        os.makedirs(cache_dir, exist_ok=True)
         with open(cache_filepath, 'w') as cache_file:
             json.dump(response, cache_file)
 
     return jsonify(response)
+
+@app.route('/search')
+def search():
+    # Extract query parameters from the request
+    author = request.args.get('author')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    tipo = request.args.get('type')
+    
+    if author:
+        deputado = get_deputado_by_name(deputados, author)
+        author_id = deputado.get('IdSPL',None)
+    else:
+        author_id = None
+        
+    # Construct the search URL based on the query parameters
+    search_url = construct_search_url(tipo=tipo,author_id=author_id, start_date=start_date, end_date=end_date)
+    print(search_url)
+    # Extract the search results from the URL
+    search_results = extract_search_results(search_url)
+
+    # Return the search results as JSON
+    return jsonify(search_results)
+
+
+@app.route('/get_deputado')
+def get_deputado():
+    # Extract the deputado name from the request
+    deputado_name = request.args.get('name')
+
+    # Validate the query parameter
+    if not deputado_name:
+        return jsonify({'error': 'Missing required parameter: name'}), 400
+
+    # Get the deputado ID based on the name
+    deputado = get_deputado_by_name(deputados, deputado_name)
+    # Check if the deputado was found
+    if deputado == {}:
+        return jsonify({'error': 'Deputado not found'}), 404
+
+    # Construct the search URL to get the projects (PLs) of the deputado
+    search_url = construct_search_url(author_id=deputado.get('IdSPL',None), tipo='PL')
+    print(search_url)
+
+    # Extract the search results (projects) from the URL
+    search_results = extract_search_results(search_url)
+
+    # Combine the metadata and projects into a single JSON object
+    response = {
+        "metadata": deputado,
+        "projects": search_results
+    }
+
+    return jsonify(response)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
