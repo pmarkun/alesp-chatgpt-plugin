@@ -1,0 +1,74 @@
+openapi: 3.0.1
+info:
+  title: Legislative Project Plugin
+  description: A plugin that allows the user to retrieve legislative projects by specifying the project type, number, and year.
+  version: 'v1'
+servers:
+  - url: http://localhost:5000
+paths:
+  /get_project:
+    get:
+      operationId: getProject
+      summary: Get the content and metadata of a legislative project
+      parameters:
+      - in: query
+        name: type
+        schema:
+          type: string
+        required: true
+        description: The type of the legislative project (e.g., "PL").
+      - in: query
+        name: number
+        schema:
+          type: string
+        required: true
+        description: The number of the legislative project.
+      - in: query
+        name: year
+        schema:
+          type: string
+        required: true
+        description: The year of the legislative project.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getProjectResponse'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+
+components:
+  schemas:
+    getProjectResponse:
+      type: object
+      properties:
+        content:
+          type: string
+          description: The text content of the legislative project.
+        metadata:
+          type: object
+          properties:
+            number:
+              type: string
+              description: The number of the legislative project.
+            type:
+              type: string
+              description: The type of the legislative project.
+            url:
+              type: string
+              description: The URL of the legislative project.
+            year:
+              type: string
+              description: The year of the legislative project.
+          required:
+            - number
+            - type
+            - url
+            - year
+      required:
+        - content
+        - metadata
